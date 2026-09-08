@@ -2,6 +2,7 @@ import * as THREE from 'three/webgpu'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { Inspector } from 'three/addons/inspector/Inspector.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { Fn, positionLocal, rotate, time } from 'three/tsl'
 
 /**
  * Base
@@ -23,8 +24,7 @@ const sizes = {
     height: window.innerHeight
 }
 
-window.addEventListener('resize', () =>
-{
+window.addEventListener('resize', () => {
     // Update sizes
     sizes.width = window.innerWidth
     sizes.height = window.innerHeight
@@ -85,8 +85,22 @@ scene.add(model.scene)
     const material = new THREE.MeshBasicNodeMaterial({
         side: THREE.DoubleSide,
         transparent: true,
-        depthWrite: false
+        depthWrite: false,
+        wireframe: true
     })
+    material.positionNode = Fn(() => {
+        const newPosition = positionLocal
+
+        // twist
+        const angle = positionLocal.y
+            .mul(0.3)
+            .sub(time.mul(0.2))
+            .sin()
+            .mul(3)
+        newPosition.xz.assign(rotate(newPosition.xz, angle))
+
+        return newPosition
+    })()
 
     // Mesh
     const mesh = new THREE.Mesh(geometry, material)
@@ -99,8 +113,7 @@ scene.add(model.scene)
  */
 const timer = new THREE.Timer()
 
-const tick = () =>
-{
+const tick = () => {
     timer.update()
 
     // Update controls
