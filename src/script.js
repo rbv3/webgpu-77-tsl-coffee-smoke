@@ -2,7 +2,7 @@ import * as THREE from 'three/webgpu'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { Inspector } from 'three/addons/inspector/Inspector.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-import { Fn, positionLocal, rotate, time } from 'three/tsl'
+import { float, Fn, min, mul, mx_noise_float, mx_noise_vec3, positionLocal, rotate, time, uv, vec2, vec3 } from 'three/tsl'
 
 /**
  * Base
@@ -86,7 +86,8 @@ scene.add(model.scene)
         side: THREE.DoubleSide,
         transparent: true,
         depthWrite: false,
-        wireframe: true
+        wireframe: false,
+        color: 0xdeccbe
     })
     material.positionNode = Fn(() => {
         const newPosition = positionLocal
@@ -97,10 +98,38 @@ scene.add(model.scene)
             .sub(time.mul(0.2))
             .sin()
             .mul(3)
+         
         newPosition.xz.assign(rotate(newPosition.xz, angle))
+
+        // wind
+        const windCoordinates = newPosition
+            .sub(
+                vec3(0, time.mul(0.3), 0)
+            )
+            .mul(0.4)
+        const windStrength = uv().y.mul(5)
+        const wind = mx_noise_vec3(windCoordinates)
+            .mul(windStrength)
+        newPosition.addAssign(wind)
 
         return newPosition
     })()
+
+    const smoke = mx_noise_float(
+        uv()
+            .mul(vec2(3, 2)) // change frequency of pattern
+            .sub(
+                vec2(0, time.mul(0.1)) // pattern goes up
+            )
+    )
+    
+    const edgeFade = min(
+        uv().y.mul(10),          // bottom
+        uv().y.oneMinus(),       // top
+        uv().x.mul(5),           // left
+        uv().x.oneMinus().mul(5) // right
+    )
+    material.opacityNode = mul(smoke, edgeFade).clamp(0, 1)
 
     // Mesh
     const mesh = new THREE.Mesh(geometry, material)
