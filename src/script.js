@@ -125,7 +125,7 @@ scene.add(model.scene)
     
     const edgeFade = min(
         uv().y.mul(10),          // bottom
-        uv().y.oneMinus(),       // top
+        uv().y.oneMinus().mul(0.6),       // top
         uv().x.mul(5),           // left
         uv().x.oneMinus().mul(5) // right
     )
